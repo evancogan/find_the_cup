@@ -2,6 +2,9 @@
 
 A shell game. I'm using this simple game to try some Test-Driven Development (TDD) techniques.
 
+<img width="797" height="594" alt="image" src="https://github.com/user-attachments/assets/efd47e4e-381b-4cf1-a15d-85da637a3cd5" />
+
+
 ## How to play
 
 1. Click **START**.
@@ -26,11 +29,11 @@ python find_the_cup.py
 python -m pytest tests -v
 ```
 
-_Write this here: how you approached testing (test-first, red to green) and what the tests cover._
+_WIP: how I approached testing (test-first, red to green) and what the tests cover._
 
 ## What I learned
 
-_Write this here: the things you're proudest of figuring out._
+_WIP: the things I'm proudest of figuring out._
 
 ## License
 
