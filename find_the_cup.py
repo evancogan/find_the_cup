@@ -52,6 +52,12 @@ SWAP_DURATION     = 600   # ms per individual swap
 SWAP_PAUSE        = 400   # ms pause between swaps
 REVEAL_DURATION   = 1200
 
+# Streak-based speed scaling
+SWAP_SPEED_PER_STREAK   = 50   # ms reduction per streak point
+SWAP_PAUSE_PER_STREAK   = 30
+SWAP_DURATION_MIN       = 200  # minimum swap duration (ms)
+SWAP_PAUSE_MIN          = 100  # minimum pause between swaps (ms)
+
 # ── Font ───────────────────────────────────────────────────────────────────
 font_big   = pygame.font.SysFont("arial", 48, bold=True)
 font_med   = pygame.font.SysFont("arial", 28)
@@ -109,6 +115,7 @@ def draw_text(surface, text, x, y, font=font_med, color=WHITE, centered=True):
 # ── Game ───────────────────────────────────────────────────────────────────
 class Game:
     def __init__(self):
+        self.streak = 0
         self.reset()
 
     def reset(self):
@@ -187,7 +194,24 @@ class Game:
         self.phase = Phase.CHOOSING
         self.phase_timer = 0
 
+    def _swap_duration(self):
+        """Return the current swap duration (ms) based on streak.
+
+        Higher streak → faster swaps, but never below SWAP_DURATION_MIN.
+        """
+        return max(SWAP_DURATION_MIN,
+                   SWAP_DURATION - self.streak * SWAP_SPEED_PER_STREAK)
+
+    def _swap_pause(self):
+        """Return the current pause between swaps (ms) based on streak."""
+        return max(SWAP_PAUSE_MIN,
+                   SWAP_PAUSE - self.streak * SWAP_PAUSE_PER_STREAK)
+
     def start_result(self, win: bool):
+        if win:
+            self.streak += 1
+        else:
+            self.streak = 0
         self.phase = Phase.RESULT
         self.phase_timer = 0
         self.result = "win" if win else "lose"
@@ -213,7 +237,7 @@ class Game:
 
         elif self.phase == Phase.DANCING:
             if self.swap_phase == "swapping":
-                progress = min(self.phase_timer / SWAP_DURATION, 1.0)
+                progress = min(self.phase_timer / self._swap_duration(), 1.0)
                 # Smooth easing: slow start, fast middle, slow end
                 t = progress * progress * (3 - 2 * progress)
                 a, b = self.swap_sequence[self.current_swap]
@@ -244,7 +268,7 @@ class Game:
                         self.swap_phase = "pausing"
                         self.phase_timer = 0
             elif self.swap_phase == "pausing":
-                if self.phase_timer >= SWAP_PAUSE:
+                if self.phase_timer >= self._swap_pause():
                     self.swap_phase = "swapping"
                     self.phase_timer = 0
 
@@ -260,10 +284,16 @@ class Game:
         elif self.phase == Phase.DANCING:
             return "Shuffling...\nTrack the ball!"
         elif self.phase == Phase.CHOOSING:
-            return "Which cup is it under?\nClick the cup you think has the ball!"
+            line = "Which cup is it under?\nClick the cup you think has the ball!"
+            if self.streak > 0:
+                line += f"\nStreak: {self.streak}"
+            return line
         elif self.phase == Phase.RESULT:
             if self.result == "win":
-                return "You Win!\nYou found the ball!"
+                line = "You Win!\nYou found the ball!"
+                if self.streak > 0:
+                    line += f"\nStreak: {self.streak}"
+                return line
             else:
                 labels = [text for text, _x in self.cup_labels()]
                 ball_slot = self.cups[self.ball_idx]["slot"]
@@ -297,11 +327,13 @@ class Game:
         # Title and subtitle from get_display()
         display = self.get_display()
         lines = display.split("\n")
-        if lines:
-            draw_text(surface, lines[0], WIDTH // 2, 50, font=font_big,
-                      color=GOLD if self.phase == Phase.RESULT else WHITE)
-        if len(lines) > 1 and lines[1]:
-            draw_text(surface, lines[1], WIDTH // 2, 100, font=font_small, color=GRAY)
+        for i, line in enumerate(lines):
+            if not line:
+                continue
+            y = 50 + i * (font_small.get_height() + 8)
+            draw_text(surface, line, WIDTH // 2, y,
+                      font=font_big if i == 0 else font_small,
+                      color=GOLD if self.phase == Phase.RESULT and i == 0 else GRAY)
 
         # Ground line
         pygame.draw.line(surface, DARK_GRAY,
