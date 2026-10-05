@@ -2,6 +2,9 @@
 
 A shell game. I'm using this simple game to try some Test-Driven Development (TDD) techniques.
 
+<img width="797" height="594" alt="image" src="https://github.com/user-attachments/assets/efd47e4e-381b-4cf1-a15d-85da637a3cd5" />
+
+
 ## How to play
 
 1. Click **START**.
@@ -30,7 +33,7 @@ The way I approached testing was to use a test-first approach, where I would wri
 
 ## What I learned
 
-TTD (Or, test driven development) gives feedback during development. It's a lot of fun to turn a test green! Test first seems to suit my development style. I like that you have a top down view, a goal-based-approach also helps to cut through writer's block. To test well, I found you need to test behavior over appearance (some tests turning green are just for show, and don't actually test the functionality). Tests can be examples, or invariants. Example tests are written for a specific bug, while invariant tests are more broad and test the system overall. I learned to extract methods as a debug step, which helps to isolate and understand the problem. Extracting methods is as easy as naming a method explicitly, and using a debugger or print statement to see the value of the method. The other important thing about testing is to ensure you're testing for something you can measure, no magic numbers or vague tests should be written. 
+TTD (Or, test driven development) gives feedback during development. It's a lot of fun to turn a test green! Test first seems to suit my development style. I like that you have a top down view, a goal-based-approach also helps to cut through writer's block. To test well, I found you need to test behavior over appearance (some tests turning green are just for show, and don't actually test the functionality). Tests can be examples, or invariants. Example tests are written for a specific bug, while invariant tests are more broad and test the system overall. I learned to extract methods as a debug step, which helps to isolate and understand the problem. Extracting methods is as easy as naming a method explicitly, and using a debugger or print statement to see the value of the method. The other important thing about testing is to ensure you're testing for something you can measure, no magic numbers or vague tests should be written.
 
 ## License
 
