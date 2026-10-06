@@ -17,6 +17,7 @@ class Phase(Enum):
     START_LOWER = auto()
     DANCING = auto()
     CHOOSING = auto()
+    RAISING = auto()
     RESULT = auto()
 
 # ── Setup ──────────────────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ BALL_RADIUS = 18
 SWAP_DURATION     = 600   # ms per individual swap
 SWAP_PAUSE        = 400   # ms pause between swaps
 REVEAL_DURATION   = 1200
+RAISE_DURATION    = REVEAL_DURATION
 
 # Streak-based speed scaling
 SWAP_SPEED_PER_STREAK   = 50   # ms reduction per streak point
@@ -207,6 +209,15 @@ class Game:
         return max(SWAP_PAUSE_MIN,
                    SWAP_PAUSE - self.streak * SWAP_PAUSE_PER_STREAK)
 
+    def start_raising(self, won):
+        """After choosing, raise cups to show the ball under the chosen cup."""
+        self.ball_visible = True
+        for cup in self.cups:
+            cup["lift"] = 0
+        self.phase = Phase.RAISING
+        self.phase_timer = 0
+        self.won = won
+
     def start_result(self, win: bool):
         if win:
             self.streak += 1
@@ -272,7 +283,14 @@ class Game:
                     self.swap_phase = "swapping"
                     self.phase_timer = 0
 
-        elif self.phase in (Phase.CHOOSING, Phase.RESULT):
+        elif self.phase == Phase.RAISING:
+            progress = min(self.phase_timer / RAISE_DURATION, 1.0)
+            for cup in self.cups:
+                cup["lift"] = progress * -150
+            if progress >= 1.0:
+                # After raising, show result
+                self.start_result(self.won)
+        elif self.phase == Phase.RESULT:
             pass
 
         self.phase_timer += dt
@@ -298,9 +316,12 @@ class Game:
                 labels = [text for text, _x in self.cup_labels()]
                 ball_slot = self.cups[self.ball_idx]["slot"]
                 return f"Wrong!\nThe ball was under {labels[ball_slot]}"
+        elif self.phase == Phase.START_LOWER:
+            return "Find the Cup!\nThe ball is under one of these cups..."
         elif self.phase == Phase.MENU:
             return "Find the Cup!"
-        return ""
+        elif self.phase == Phase.RAISING:
+            return "Raising cups...\nLook at where you clicked!"
 
     # ── Input ────────────────────────────────────────────────────────────
     def cup_labels(self):
@@ -317,7 +338,7 @@ class Game:
             if (abs(mx - cx) < CUP_WIDTH // 2 + 10
                     and abs(my - cy) < CUP_HEIGHT // 2 + 10):
                 won = (i == self.ball_idx)
-                self.start_result(won)
+                self.start_raising(won)
                 return
 
     # ── Render ───────────────────────────────────────────────────────────

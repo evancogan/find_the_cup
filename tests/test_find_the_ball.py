@@ -44,6 +44,8 @@ def _win_on_purpose(game):
     _full_game(game)
     cup = game.cups[game.ball_idx]
     game.handle_click((int(cup["x"]), int(find_the_cup.CUP_Y + cup["lift"])))
+    # Advance through RAISING phase to get to RESULT
+    _advance_to(game, find_the_cup.Phase.RESULT)
     assert game.result == "win"
 
 
@@ -54,6 +56,8 @@ def _lose_on_purpose(game):
     wrong = next(i for i in range(3) if i != game.ball_idx)
     cup = game.cups[wrong]
     game.handle_click((int(cup["x"]), int(find_the_cup.CUP_Y + cup["lift"])))
+    # Advance through RAISING phase to get to RESULT
+    _advance_to(game, find_the_cup.Phase.RESULT)
     assert game.result == "lose"
 
 
@@ -254,6 +258,8 @@ def test_clicking_wrong_cup():
     cup_x = int(game.cups[1]["x"])
     cup_y = int(find_the_cup.CUP_Y + game.cups[1]["lift"])
     game.handle_click((cup_x, cup_y))
+    # After clicking, cups raise before showing result
+    _advance_to(game, find_the_cup.Phase.RESULT)
     assert game.phase == find_the_cup.Phase.RESULT
     assert game.result == "lose"
 
@@ -268,6 +274,8 @@ def test_clicking_right_cup():
     cup_x = int(game.cups[2]["x"])
     cup_y = int(find_the_cup.CUP_Y + game.cups[2]["lift"])
     game.handle_click((cup_x, cup_y))
+    # After clicking, cups raise before showing result
+    _advance_to(game, find_the_cup.Phase.RESULT)
     assert game.phase == find_the_cup.Phase.RESULT
     assert game.result == "win"
 
