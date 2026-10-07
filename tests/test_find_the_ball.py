@@ -112,6 +112,56 @@ def test_game_waits_for_start_button():
     assert game.phase == find_the_cup.Phase.MENU, f"Expected Phase.MENU, but got {game.phase}"
 
 
+def test_start_button_disappears_after_click():
+    """The START button disappears as soon as the player clicks it.
+
+    The game transitions from MENU → START, and render() no longer draws
+    the START button during the START phase (it only appears in MENU).
+    """
+    import find_the_cup
+    game = find_the_cup.Game()
+    assert game.phase == find_the_cup.Phase.MENU
+
+    # Click the start button
+    cx = find_the_cup.WIDTH // 2
+    cy = find_the_cup.HEIGHT // 2 + 30
+    game.handle_click((cx, cy))
+
+    # Phase should have advanced from MENU to START (reveal animation)
+    assert game.phase == find_the_cup.Phase.START, \
+        f"Expected Phase.START after click, got {game.phase}"
+
+    # The START button must NOT be drawn during the START phase.
+    # We verify this by checking that render() does not call _draw_button for START.
+    import pygame
+    screen = pygame.Surface((800, 600))
+    game.render(screen)
+
+    # If the button were still drawn, there would be a green rectangle on the surface.
+    # Sample pixels at the button location (center-bottom: cx ± 100, cy ± 30)
+    btn_center_x = find_the_cup.WIDTH // 2
+    btn_center_y = find_the_cup.HEIGHT // 2 + 60
+    for dx in range(-80, 80, 20):
+        for dy in range(-25, 25, 20):
+            px = screen.get_at((btn_center_x + dx, btn_center_y + dy))
+            # GREEN is (50, 180, 50). A filled button would have green pixels here.
+            msg = f"Green button pixel found at ({btn_center_x + dx}, {btn_center_y + dy}) — the START button should not be drawn in Phase.START"
+            assert px[:3] != (50, 180, 50), msg
+
+
+def test_cup_click_on_menu_does_not_start_game():
+    """Clicking a cup while on the MENU screen must not start the game."""
+    import find_the_cup
+    game = find_the_cup.Game()
+    assert game.phase == find_the_cup.Phase.MENU
+    # Click the center of the middle cup (well outside the START button rect)
+    cx = find_the_cup.WIDTH // 2
+    cy = find_the_cup.CUP_Y
+    game.handle_click((cx, cy))
+    assert game.phase == find_the_cup.Phase.MENU, \
+        f"Phase should still be MENU after clicking a cup on the menu, got {game.phase}"
+
+
 # ---- Reveal -----------------------------------------------------------------
 
 def test_ball_shown_during_reveal():

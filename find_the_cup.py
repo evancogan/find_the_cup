@@ -22,6 +22,13 @@ class Phase(Enum):
 
 # ── Setup ──────────────────────────────────────────────────────────────────
 pygame.init()
+_mixer_ok = False
+try:
+    pygame.mixer.init()
+    _mixer_ok = True
+except pygame.error:
+    pass  # No audio device; sounds will be silent silently
+
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Find the Cup!")
@@ -64,6 +71,16 @@ SWAP_PAUSE_MIN          = 100  # minimum pause between swaps (ms)
 font_big   = pygame.font.SysFont("arial", 48, bold=True)
 font_med   = pygame.font.SysFont("arial", 28)
 font_small = pygame.font.SysFont("arial", 20)
+
+# ── Sound helpers ───────────────────────────────────────────────────────────
+from sfx import make_sfx, PRESETS
+
+# Build every sound ONCE at startup; None when mixer failed
+SND_CLICK = make_sfx(**PRESETS["hit"]) if _mixer_ok else None
+SND_WIN   = make_sfx(**PRESETS["coin"]) if _mixer_ok else None
+SND_LOSE  = make_sfx(wave="square", start_hz=400, end_hz=120, duration=0.4) \
+            if _mixer_ok else None
+SND_WHOOSH = make_sfx(**PRESETS["whoosh"]) if _mixer_ok else None
 
 
 # ── Helper: draw a cup ─────────────────────────────────────────────────────
@@ -186,6 +203,8 @@ class Game:
         self.swap_phase = "swapping"  # "swapping" or "pausing"
         self.phase_timer = 0
         self.phase = Phase.DANCING
+        if SND_WHOOSH:
+            SND_WHOOSH.play()
 
     def start_choice(self):
         """Choice phase: player picks a cup."""
@@ -221,8 +240,12 @@ class Game:
     def start_result(self, win: bool):
         if win:
             self.streak += 1
+            if SND_WIN:
+                SND_WIN.play()
         else:
             self.streak = 0
+            if SND_LOSE:
+                SND_LOSE.play()
         self.phase = Phase.RESULT
         self.phase_timer = 0
         self.result = "win" if win else "lose"
@@ -282,6 +305,8 @@ class Game:
                 if self.phase_timer >= self._swap_pause():
                     self.swap_phase = "swapping"
                     self.phase_timer = 0
+                    if SND_WHOOSH:
+                        SND_WHOOSH.play()
 
         elif self.phase == Phase.RAISING:
             progress = min(self.phase_timer / RAISE_DURATION, 1.0)
@@ -329,6 +354,15 @@ class Game:
         return [(f"Cup {i+1}", self.slots[i]) for i in range(len(self.slots))]
 
     def handle_click(self, pos):
+        if self.phase == Phase.MENU:
+            # Check if START button was clicked
+            btn_x = WIDTH // 2 - 100
+            btn_y = HEIGHT // 2 + 30
+            mx, my = pos
+            if (btn_x <= mx <= btn_x + 200 and
+                    btn_y <= my <= btn_y + 60):
+                self.start_start()
+            return  # any click on MENU is handled or ignored
         if self.phase != Phase.CHOOSING:
             return
         mx, my = pos
@@ -338,6 +372,8 @@ class Game:
             if (abs(mx - cx) < CUP_WIDTH // 2 + 10
                     and abs(my - cy) < CUP_HEIGHT // 2 + 10):
                 won = (i == self.ball_idx)
+                if SND_CLICK:
+                    SND_CLICK.play()
                 self.start_raising(won)
                 return
 
@@ -390,9 +426,6 @@ class Game:
 
         # Buttons
         if self.phase == Phase.MENU:
-            self._draw_button(surface, WIDTH // 2, HEIGHT // 2 + 60,
-                              "START", GREEN, font_big)
-        elif self.phase == Phase.START:
             self._draw_button(surface, WIDTH // 2, HEIGHT // 2 + 60,
                               "START", GREEN, font_big)
         elif self.phase == Phase.RESULT:
