@@ -7,7 +7,10 @@ Watch the cups swap positions, then pick the right one!
 import pygame
 import random
 import math
+import os
 from enum import Enum, auto
+
+from highscore import load_high_score, save_high_score
 
 # ── Phase Enum ───────────────────────────────────────────────────────────────
 class Phase(Enum):
@@ -66,6 +69,10 @@ SWAP_SPEED_PER_STREAK   = 50   # ms reduction per streak point
 SWAP_PAUSE_PER_STREAK   = 30
 SWAP_DURATION_MIN       = 200  # minimum swap duration (ms)
 SWAP_PAUSE_MIN          = 100  # minimum pause between swaps (ms)
+
+# Best streak is saved next to the game so it survives closing it
+HIGH_SCORE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "highscore.json")
 
 # ── Font ───────────────────────────────────────────────────────────────────
 font_big   = pygame.font.SysFont("arial", 48, bold=True)
@@ -133,8 +140,11 @@ def draw_text(surface, text, x, y, font=font_med, color=WHITE, centered=True):
 
 # ── Game ───────────────────────────────────────────────────────────────────
 class Game:
-    def __init__(self):
+    def __init__(self, high_score_path=None):
+        # Look up HIGH_SCORE_FILE at call time so tests can point it elsewhere
+        self.high_score_path = high_score_path or HIGH_SCORE_FILE
         self.streak = 0
+        self.best_streak = load_high_score(self.high_score_path)
         self.reset()
 
     def reset(self):
@@ -240,6 +250,10 @@ class Game:
     def start_result(self, win: bool):
         if win:
             self.streak += 1
+            # Save on every new best, so quitting mid-streak still keeps it
+            if self.streak > self.best_streak:
+                self.best_streak = self.streak
+                save_high_score(self.best_streak, self.high_score_path)
             if SND_WIN:
                 SND_WIN.play()
         else:
@@ -344,7 +358,7 @@ class Game:
         elif self.phase == Phase.START_LOWER:
             return "Find the Cup!\nThe ball is under one of these cups..."
         elif self.phase == Phase.MENU:
-            return "Find the Cup!"
+            return f"Find the Cup!\nBest streak: {self.best_streak}"
         elif self.phase == Phase.RAISING:
             return "Raising cups...\nLook at where you clicked!"
 

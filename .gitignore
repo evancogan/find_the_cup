@@ -2,3 +2,4 @@ __pycache__/
 .pytest_cache/
 NOTES.md
 backup/
+highscore.json
