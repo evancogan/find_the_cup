@@ -63,6 +63,7 @@ SWAP_DURATION     = 600   # ms per individual swap
 SWAP_PAUSE        = 400   # ms pause between swaps
 REVEAL_DURATION   = 1200
 RAISE_DURATION    = REVEAL_DURATION
+RESULT_PAUSE      = 500   # ms the raised cups are held before the result shows
 
 # Streak-based speed scaling
 SWAP_SPEED_PER_STREAK   = 50   # ms reduction per streak point
@@ -326,8 +327,7 @@ class Game:
             progress = min(self.phase_timer / RAISE_DURATION, 1.0)
             for cup in self.cups:
                 cup["lift"] = progress * -150
-            if progress >= 1.0:
-                # After raising, show result
+            if self.phase_timer >= RAISE_DURATION + RESULT_PAUSE:
                 self.start_result(self.won)
         elif self.phase == Phase.RESULT:
             pass

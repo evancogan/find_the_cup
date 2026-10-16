@@ -330,6 +330,25 @@ def test_clicking_right_cup():
     assert game.result == "win"
 
 
+def test_small_pause_before_results():
+    """Once the cups are fully raised, the game holds for a moment before the result."""
+    import find_the_cup
+    game = find_the_cup.Game()
+    _full_game(game)
+    cup = game.cups[game.ball_idx]
+    game.handle_click((int(cup["x"]), int(find_the_cup.CUP_Y + cup["lift"])))
+    assert game.phase == find_the_cup.Phase.RAISING
+
+    game.update(find_the_cup.RAISE_DURATION)
+    game.update(1)
+    assert game.phase == find_the_cup.Phase.RAISING, "result appeared with no pause"
+    assert all(c["lift"] == -150 for c in game.cups), "cups should be fully raised"
+
+    game.update(find_the_cup.RESULT_PAUSE)
+    game.update(1)
+    assert game.phase == find_the_cup.Phase.RESULT
+
+
 # ---- Labels and messages ----------------------------------------------------
 
 def test_labels_stay_with_positions_not_cups():
